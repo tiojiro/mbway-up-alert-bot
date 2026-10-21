@@ -1,8 +1,8 @@
 import logging
-import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.date import DateTrigger
 from telegram.error import TelegramError
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
@@ -28,7 +28,7 @@ def _formatar_premios(hoje: date) -> str:
         f"• {premio.data_hora:%H:%M} — {premio.categoria}"
         for premio in lista_premios
     )
-    return f"prêmios de hoje:\n{linhas}"
+    return f"Prêmios de hoje:\n{linhas}"
 
 
 async def start(
@@ -36,17 +36,7 @@ async def start(
 ) -> None:
     if update.message:
         await update.message.reply_text(
-            "Olá! Use /premios para consultar os prêmios de hoje. "
-            "Use /chatid para ver o ID deste chat."
-        )
-
-
-async def chatid(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
-    if update.message and update.effective_chat:
-        await update.message.reply_text(
-            f"ID deste chat: {update.effective_chat.id}"
+            "Olá! Use /premios para consultar os prêmios de hoje."
         )
 
 
@@ -86,6 +76,64 @@ async def enviar_premios_diarios(aplicacao: Application) -> None:
     except TelegramError:
         logger.exception("Não foi possível enviar a notificação diária.")
 
+    _agendar_lembretes_premios(aplicacao)
+
+
+async def enviar_lembrete_premio(
+    aplicacao: Application, categoria: str
+) -> None:
+    try:
+        await aplicacao.bot.send_message(
+            chat_id=get_telegram_chat_id(),
+            text=f"Lembrete: Prêmio {categoria} em 2 minutos!",
+        )
+    except (RuntimeError, TelegramError):
+        logger.exception("Não foi possível enviar o lembrete do prêmio %s.", categoria)
+
+
+def _agendar_lembretes_premios(
+    aplicacao: Application, agora: datetime | None = None
+) -> int:
+    agendador = aplicacao.bot_data.get("agendador_premios")
+    if agendador is None:
+        logger.error("Agendador de prêmios indisponível; lembretes não agendados.")
+        return 0
+
+    instante_atual = agora or datetime.now(PREMIOS_TIMEZONE)
+    try:
+        premios = ler_premios_do_dia(hoje=instante_atual.date())
+    except (OSError, ValueError):
+        logger.exception("Não foi possível carregar os prémios para agendar lembretes.")
+        return 0
+
+    quantidade_agendada = 0
+    for premio in premios:
+        horario_premio = premio.data_hora.replace(tzinfo=PREMIOS_TIMEZONE)
+        horario_lembrete = horario_premio - timedelta(minutes=2)
+        if horario_lembrete <= instante_atual:
+            continue
+
+        identificador = (
+            f"lembrete-{premio.data_hora:%Y%m%d-%H%M}-{premio.categoria.casefold()}"
+        )
+        agendador.add_job(
+            enviar_lembrete_premio,
+            trigger=DateTrigger(
+                run_date=horario_lembrete,
+                timezone=PREMIOS_TIMEZONE,
+            ),
+            args=[aplicacao, premio.categoria],
+            id=identificador,
+            replace_existing=True,
+        )
+        quantidade_agendada += 1
+
+    logger.info(
+        "%d lembrete(s) de prémios agendado(s) para hoje.",
+        quantidade_agendada,
+    )
+    return quantidade_agendada
+
 
 async def iniciar_agendador(aplicacao: Application) -> None:
     hora, minuto = get_horario_premios()
@@ -99,8 +147,9 @@ async def iniciar_agendador(aplicacao: Application) -> None:
         id="notificacao-diaria-premios",
         replace_existing=True,
     )
-    agendador.start()
     aplicacao.bot_data["agendador_premios"] = agendador
+    agendador.start()
+    _agendar_lembretes_premios(aplicacao)
     logger.info(
         "Notificação diária agendada para %02d:%02d (%s).",
         hora,
@@ -120,12 +169,7 @@ def executar_bot() -> None:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
         level=logging.INFO,
     )
-    if os.getenv("TELEGRAM_CHAT_ID"):
-        get_telegram_chat_id()
-    else:
-        logger.warning(
-            "TELEGRAM_CHAT_ID não configurado; use /chatid e defina-o no Portainer."
-        )
+    get_telegram_chat_id()
     get_horario_premios()
     aplicacao = (
         Application.builder()
@@ -135,6 +179,5 @@ def executar_bot() -> None:
         .build()
     )
     aplicacao.add_handler(CommandHandler("start", start))
-    aplicacao.add_handler(CommandHandler("chatid", chatid))
     aplicacao.add_handler(CommandHandler("premios", premios))
     aplicacao.run_polling()
