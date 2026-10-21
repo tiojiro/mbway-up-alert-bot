@@ -55,7 +55,7 @@ def ler_premios_do_dia(
     parser.close()
 
     if len(parser.linhas) < 2:
-        raise ValueError(f"Nenhuma tabela de prémios válida encontrada em {arquivo}.")
+        raise ValueError(f"Nenhuma tabela de prêmios válida encontrada em {arquivo}.")
 
     categorias = [celula.casefold() for celula in parser.linhas[0]]
     if not all(categoria in categorias for categoria in ("diário", "semanal", "mensal")):

@@ -22,13 +22,13 @@ logger = logging.getLogger(__name__)
 def _formatar_premios(hoje: date) -> str:
     lista_premios = ler_premios_do_dia(hoje=hoje)
     if not lista_premios:
-        return "Não há prémios registados para hoje."
+        return "Não há prêmios registados para hoje."
 
     linhas = "\n".join(
         f"• {premio.data_hora:%H:%M} — {premio.categoria}"
         for premio in lista_premios
     )
-    return f"Prémios de hoje:\n{linhas}"
+    return f"prêmios de hoje:\n{linhas}"
 
 
 async def start(
@@ -36,7 +36,7 @@ async def start(
 ) -> None:
     if update.message:
         await update.message.reply_text(
-            "Olá! Use /premios para consultar os prémios de hoje. "
+            "Olá! Use /premios para consultar os prêmios de hoje. "
             "Use /chatid para ver o ID deste chat."
         )
 
@@ -61,9 +61,9 @@ async def premios(
             datetime.now(PREMIOS_TIMEZONE).date()
         )
     except (OSError, ValueError):
-        logger.exception("Não foi possível ler o arquivo de prémios.")
+        logger.exception("Não foi possível ler o arquivo de prêmios.")
         await update.message.reply_text(
-            "Não foi possível consultar os prémios. Verifique o arquivo "
+            "Não foi possível consultar os prêmios. Verifique o arquivo "
             "data/premios.txt."
         )
         return
