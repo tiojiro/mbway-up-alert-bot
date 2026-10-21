@@ -9,4 +9,4 @@ services:
       PREMIOS_TIMEZONE: ${PREMIOS_TIMEZONE:-Europe/Lisbon}
       PREMIOS_FILE: /data/premios.txt
     volumes:
-      - /home/umbrel/umbrel/app-data/portainer/data/mbway_up_premios:/data:ro
+      - /data/mbway_up_premios:/data:ro
