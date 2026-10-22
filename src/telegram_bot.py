@@ -28,7 +28,7 @@ def _formatar_premios(hoje: date) -> str:
         f"• {premio.data_hora:%H:%M} — {premio.categoria}"
         for premio in lista_premios
     )
-    return f"Prêmio(s) de hoje:\n{linhas}"
+    return f"🏆Prêmio(s) de hoje:\n{linhas}"
 
 
 async def start(
@@ -85,7 +85,7 @@ async def enviar_lembrete_premio(
     try:
         await aplicacao.bot.send_message(
             chat_id=get_telegram_chat_id(),
-            text=f"Lembrete: Prêmio {categoria} em 2 minutos!",
+            text=f"🔔Lembrete: Prêmio {categoria} em 2 minutos!",
         )
     except (RuntimeError, TelegramError):
         logger.exception("Não foi possível enviar o lembrete do prêmio %s.", categoria)
