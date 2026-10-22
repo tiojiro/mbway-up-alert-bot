@@ -1,5 +1,5 @@
 <table>
-    <tbody><tr>
+    <tr>
         <td>Diário</td>
         <td>Semanal</td>
         <td>Mensal</td>
@@ -443,4 +443,4 @@
             <br>30/01/2027 - 09:00
         </td>
     </tr>
-</tbody></table>
+</table>
