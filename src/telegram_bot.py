@@ -28,7 +28,7 @@ def _formatar_premios(hoje: date) -> str:
         f"• {premio.data_hora:%H:%M} — {premio.categoria}"
         for premio in lista_premios
     )
-    return f"Prêmios de hoje:\n{linhas}"
+    return f"Prêmio(s) de hoje:\n{linhas}"
 
 
 async def start(
@@ -103,7 +103,7 @@ def _agendar_lembretes_premios(
     try:
         premios = ler_premios_do_dia(hoje=instante_atual.date())
     except (OSError, ValueError):
-        logger.exception("Não foi possível carregar os prémios para agendar lembretes.")
+        logger.exception("Não foi possível carregar os prêmios para agendar lembretes.")
         return 0
 
     quantidade_agendada = 0
@@ -129,7 +129,7 @@ def _agendar_lembretes_premios(
         quantidade_agendada += 1
 
     logger.info(
-        "%d lembrete(s) de prémios agendado(s) para hoje.",
+        "%d lembrete(s) de prêmios agendado(s) para hoje.",
         quantidade_agendada,
     )
     return quantidade_agendada
