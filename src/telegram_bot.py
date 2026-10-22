@@ -28,7 +28,7 @@ def _formatar_premios(hoje: date) -> str:
         f"• {premio.data_hora:%H:%M} — {premio.categoria}"
         for premio in lista_premios
     )
-    return f"🏆Prêmio(s) de hoje:\n{linhas}"
+    return f"🏆 Prêmio(s) de hoje:\n{linhas}"
 
 
 async def start(
