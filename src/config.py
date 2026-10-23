@@ -1,12 +1,9 @@
 import os
 import re
 from datetime import datetime
-from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PREMIOS_FILE = Path(os.getenv("PREMIOS_FILE", PROJECT_ROOT / "data" / "premios.txt"))
 PREMIOS_TIMEZONE_NAME = os.getenv("PREMIOS_TIMEZONE", "Europe/Lisbon")
 try:
     PREMIOS_TIMEZONE = ZoneInfo(PREMIOS_TIMEZONE_NAME)
