@@ -169,6 +169,7 @@ def executar_bot() -> None:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
         level=logging.INFO,
     )
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     get_telegram_chat_id()
     get_horario_premios()
     aplicacao = (
