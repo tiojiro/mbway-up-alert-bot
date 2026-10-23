@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
@@ -7,20 +7,19 @@ from telegram.error import TelegramError
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
+from .calculos import Premio, obter_premios_do_dia
 from .config import (
     PREMIOS_TIMEZONE,
     get_horario_premios,
     get_telegram_chat_id,
     get_telegram_token,
 )
-from .leitor import ler_premios_do_dia
 
 
 logger = logging.getLogger(__name__)
 
 
-def _formatar_premios(hoje: date) -> str:
-    lista_premios = ler_premios_do_dia(hoje=hoje)
+def _formatar_premios(lista_premios: list[Premio]) -> str:
     if not lista_premios:
         return "Não há prêmios registados para hoje."
 
@@ -46,37 +45,27 @@ async def premios(
     if not update.message:
         return
 
-    try:
-        mensagem = _formatar_premios(
-            datetime.now(PREMIOS_TIMEZONE).date()
-        )
-    except (OSError, ValueError):
-        logger.exception("Não foi possível ler o arquivo de prêmios.")
-        await update.message.reply_text(
-            "Não foi possível consultar os prêmios. Verifique o arquivo "
-            "data/premios.txt."
-        )
-        return
-
-    await update.message.reply_text(mensagem)
+    dia = datetime.now(PREMIOS_TIMEZONE).date()
+    await update.message.reply_text(_formatar_premios(obter_premios_do_dia(dia)))
 
 
 async def enviar_premios_diarios(aplicacao: Application) -> None:
+    instante_atual = datetime.now(PREMIOS_TIMEZONE)
+    premios_do_dia = obter_premios_do_dia(instante_atual.date())
     try:
         chat_id = get_telegram_chat_id()
-        mensagem = _formatar_premios(
-            datetime.now(PREMIOS_TIMEZONE).date()
-        )
         await aplicacao.bot.send_message(
             chat_id=chat_id,
-            text=mensagem,
+            text=_formatar_premios(premios_do_dia),
         )
-    except (OSError, RuntimeError, ValueError):
+    except RuntimeError:
         logger.exception("Não foi possível preparar a notificação diária.")
     except TelegramError:
         logger.exception("Não foi possível enviar a notificação diária.")
 
-    _agendar_lembretes_premios(aplicacao)
+    _agendar_lembretes_premios(
+        aplicacao, premios=premios_do_dia, agora=instante_atual
+    )
 
 
 async def enviar_lembrete_premio(
@@ -92,7 +81,9 @@ async def enviar_lembrete_premio(
 
 
 def _agendar_lembretes_premios(
-    aplicacao: Application, agora: datetime | None = None
+    aplicacao: Application,
+    agora: datetime | None = None,
+    premios: list[Premio] | None = None,
 ) -> int:
     agendador = aplicacao.bot_data.get("agendador_premios")
     if agendador is None:
@@ -100,11 +91,8 @@ def _agendar_lembretes_premios(
         return 0
 
     instante_atual = agora or datetime.now(PREMIOS_TIMEZONE)
-    try:
-        premios = ler_premios_do_dia(hoje=instante_atual.date())
-    except (OSError, ValueError):
-        logger.exception("Não foi possível carregar os prêmios para agendar lembretes.")
-        return 0
+    if premios is None:
+        premios = obter_premios_do_dia(instante_atual.date())
 
     quantidade_agendada = 0
     for premio in premios:

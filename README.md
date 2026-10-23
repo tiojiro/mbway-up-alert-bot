@@ -25,9 +25,8 @@ Defina as seguintes variáveis de ambiente:
 |---|---|---|---|
 | `TELEGRAM_BOT_TOKEN` | Sim | — | Token do bot fornecido pelo Telegram. |
 | `TELEGRAM_CHAT_ID` | Sim | — | ID numérico do chat de destino. |
-| `PREMIOS_HORARIO` | Não | `06:00` | Horário da notificação diária, no formato `HH:MM`. |
+| `PREMIOS_HORARIO` | Não | `06:00` | Horário de envio da mensagem diária, no formato `HH:MM`. |
 | `PREMIOS_TIMEZONE` | Não | `Europe/Lisbon` | Fuso horário usado para as notificações. |
-| `PREMIOS_FILE` | Não | `data/premios.txt` | Caminho do arquivo com os horários dos prêmios. |
 
 Não publique o token do bot em repositórios ou logs.
 
@@ -47,31 +46,16 @@ python main.py
 
 ## Executar com Docker Compose
 
-O projeto inclui `Dockerfile` e `compose.yaml`. O Compose requer `TELEGRAM_BOT_TOKEN` no ambiente. O `TELEGRAM_CHAT_ID` está definido diretamente no `compose.yaml`; ajuste-o para o chat pretendido antes de iniciar o serviço.
-
-O arquivo Compose monta `/data/mbway_up_premios` como `/data` dentro do contêiner. Esse diretório deve conter `premios.txt`.
+O projeto inclui `Dockerfile` e `compose.yaml`. Defina `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` no ambiente antes de iniciar o serviço.
 
 ```bash
 docker compose up -d --build
 ```
 
-## Formato do arquivo de prêmios
+## Regras dos prêmios
 
-O arquivo deve conter uma tabela HTML com as colunas `Diário`, `Semanal` e `Mensal`. Cada horário deve seguir o formato `DD/MM/AAAA - HH:MM`; várias datas podem ser separadas por quebras de linha ou tags `<br>` dentro da respetiva célula.
+Os horários são calculados em `src/calculos.py`, sem arquivo de dados externo:
 
-Exemplo:
-
-```html
-<table>
-  <tr>
-    <td>Diário</td>
-    <td>Semanal</td>
-    <td>Mensal</td>
-  </tr>
-  <tr>
-    <td>21/10/2026 - 12:30<br>22/10/2026 - 13:00</td>
-    <td>25/10/2026 - 18:00</td>
-    <td>01/11/2026 - 20:00</td>
-  </tr>
-</table>
-```
+- **Diário:** começa em 22/09/2021 às 07:12. A cada dia, a hora avança uma unidade (reiniciando em 07 após 23) e os minutos avançam 24 (reiniciando após 59).
+- **Semanal:** começa em 25/09/2021 às 21:45. A próxima data avança oito dias, exceto quando o prêmio anterior cai num domingo, quando avança um dia. A hora depende do dia da semana e os minutos alternam entre 15 e 45, começando em 15 no primeiro prêmio calculado após a data inicial.
+- **Mensal:** ocorre no último sábado do mês, a partir de 25/09/2021 às 13:00. A cada mês, a hora avança uma unidade (reiniciando em 07 após 23).
