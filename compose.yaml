@@ -7,3 +7,4 @@ services:
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:?Defina o ID do chat nas variáveis da Stack}
       PREMIOS_HORARIO: ${PREMIOS_HORARIO:-06:00}
       PREMIOS_TIMEZONE: ${PREMIOS_TIMEZONE:-Europe/Lisbon}
+      TZ: ${PREMIOS_TIMEZONE:-Europe/Lisbon}
